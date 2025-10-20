@@ -1,317 +1,164 @@
-# import gradio as gr
-
-# from prompt_teacher.callbacks import (explain_improvement, explain_metaprompt,
-#                                       robustly_improve_prompt, update_widgets)
-# from prompt_teacher.messages import *
-# from prompt_teacher.metaprompts import metaprompts
-
-# with gr.Blocks(title="Prompt Teacher", theme=gr.themes.Soft()) as gradio_app:
-#     gr.Markdown("### 🤖 Prompt Teacher 📝✨")
-#     with gr.Accordion("ℹ️ Info: Code 📜 and Documentation 📚", open=True):
-#         gr.Markdown(
-#             "Can be found at: [Github: pwenker/prompt_teacher](https://github.com/pwenker/prompt_teacher) 📄✨"
-#         )
-#     with gr.Row():
-#         with gr.Column(scale=2):
-#             prompt_teacher = gr.Chatbot(
-#                 height=580,
-#                 label="Prompt Teacher",
-#                 show_copy_button=True,
-#                 value=[[inital_usr_text, initial_bot_text]],
-#                 avatar_images=("thinking.svg", "robot.svg"),
-#             )
-#             prompt = gr.Textbox(
-#                 label="Prompt",
-#                 interactive=True,
-#                 placeholder="Type in your prompt",
-#                 value="How to write a good prompt?",
-#                 show_copy_button=True,
-#             )
-#             with gr.Row():
-#                 explain_btn = gr.Button(
-#                     "Explain improvement 💡",
-#                     variant="primary",
-#                     visible=False,
-#                 )
-#                 replace_btn = gr.Button(
-#                     "Accept improvement 👍",
-#                     variant="primary",
-#                     visible=False,
-#                 )
-#             with gr.Row():
-#                 improve_btn = gr.Button("✨Improve prompt", variant="primary")
-#         with gr.Column(scale=1):
-#             model_name = gr.Dropdown(
-#                 label="Large Language Model",
-#                 info="Select Large Language Model",
-#                 choices=[
-#                     ("gpt-4o", "gpt-4o"),
-#                     ("gpt-4-turbo", "gpt-4-turbo"),
-#                     ("claude-3-opus", "claude-3-opus-20240229"),
-#                 ],
-#                 value="gpt-4o",
-#             )
-#             api_key = gr.Textbox(
-#                 placeholder="Paste in your API key (sk-...)",
-#                 label="OpenAI/Anthropic API Key",
-#                 info="Paste in your API key",
-#                 lines=1,
-#                 type="password",
-#             )
-#             metaprompt = gr.Radio(
-#                 label="Improvements",
-#                 info="Select how the prompt should be improved",
-#                 value="Comprehensive prompt refinement",
-#                 choices=[mp.name.replace("_", " ").capitalize() for mp in metaprompts],
-#             )
-#             feedback = gr.Textbox(
-#                 label="Feedback",
-#                 info="Write your own feedback to be used to improve the prompt",
-#                 visible=False,
-#             )
-
-#     improved_prompt = gr.Textbox(label="Improved Prompt", visible=False)
-#     examples = gr.Examples(
-#         examples=[[mp.name, mp.example_prompt] for mp in metaprompts],
-#         examples_per_page=100,
-#         inputs=[metaprompt, prompt],
-#     )
-
-#     metaprompt.change(
-#         fn=update_widgets,
-#         inputs=[metaprompt, feedback],
-#         outputs=[improve_btn, feedback],
-#     ).success(
-#         lambda: [gr.Button(visible=False), gr.Button(visible=False)],
-#         None,
-#         [replace_btn, explain_btn],
-#     ).success(
-#         fn=explain_metaprompt,
-#         inputs=[prompt_teacher, metaprompt],
-#         outputs=[prompt_teacher],
-#     )
-#     improve_btn.click(
-#         fn=robustly_improve_prompt,
-#         inputs=[
-#             model_name,
-#             api_key,
-#             prompt,
-#             metaprompt,
-#             feedback,
-#             prompt_teacher,
-#         ],
-#         outputs=[improved_prompt, prompt_teacher],
-#     ).success(
-#         lambda: [gr.Button(visible=True), gr.Button(visible=True)],
-#         None,
-#         [replace_btn, explain_btn],
-#     )
-
-#     explain_btn.click(lambda: gr.Button(visible=False), None, explain_btn).success(
-#         explain_improvement,
-#         [
-#             model_name,
-#             api_key,
-#             prompt,
-#             metaprompt,
-#             improved_prompt,
-#             prompt_teacher,
-#         ],
-#         prompt_teacher,
-#     )
-
-#     replace_btn.click(lambda x: x, improved_prompt, prompt).success(
-#         lambda: [gr.Button(visible=False), gr.Button(visible=False)],
-#         None,
-#         [replace_btn, explain_btn],
-#     )
-
-# if __name__ == "__main__":
-#     gradio_app.queue(default_concurrency_limit=10).launch(favicon_path="robot.svg")
-
-
-
-import gradio as gr
-from transformers import pipeline
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
+import gradio as gr
+from huggingface_hub import InferenceClient
+from pathlib import Path
 
-# 🔹 Load Hugging Face token from .env
-load_dotenv()
-hf_token = os.getenv("HUGGINGFACE_API_KEY")
-
-# 🔹 Initialize Hugging Face model pipeline (Free Inference API)
-generator = pipeline(
-    "text-generation",
-    model="HuggingFaceH4/zephyr-7b-beta",
-    token=hf_token
-)
-
-# ------------------------------------------------------------------------
-# 🔹 Define simple local replacements for improvement and explanation
-# ------------------------------------------------------------------------
-def robustly_improve_prompt(model_name, api_key, prompt, metaprompt, feedback, prompt_teacher):
-    """
-    Replace OpenAI/Anthropic API call with Hugging Face free model inference.
-    """
-    # Instruction for model
-    improvement_instruction = (
-        f"Improve the following prompt according to '{metaprompt}'. "
-        f"Provide a clearer and more effective version. "
-        f"Feedback: {feedback}\n\nPrompt:\n{prompt}"
-    )
-
-    # Generate improved prompt using Hugging Face model
-    result = generator(improvement_instruction, max_new_tokens=200, temperature=0.7)
-    improved_prompt = result[0]["generated_text"]
-
-    # Append response to chat
-    messages = prompt_teacher + [
-        ["User", prompt],
-        ["AI", improved_prompt]
-    ]
-
-    return improved_prompt, messages
-
-
-def explain_improvement(model_name, api_key, prompt, metaprompt, improved_prompt, prompt_teacher):
-    """
-    Explain how the improved prompt is better using the Hugging Face model.
-    """
-    explanation_instruction = (
-        f"Explain how this improved prompt is better.\n\n"
-        f"Original Prompt:\n{prompt}\n\nImproved Prompt:\n{improved_prompt}"
-    )
-
-    result = generator(explanation_instruction, max_new_tokens=150, temperature=0.7)
-    explanation = result[0]["generated_text"]
-
-    messages = prompt_teacher + [
-        ["User", "Explain how this improvement helps."],
-        ["AI", explanation]
-    ]
-    return messages
-
-
-# ------------------------------------------------------------------------
-# 🔹 Simplified UI setup (rest unchanged)
-# ------------------------------------------------------------------------
-from prompt_teacher.messages import *
+# Internal imports
+from prompt_teacher.messages import inital_usr_text, initial_bot_text
 from prompt_teacher.metaprompts import metaprompts
 from prompt_teacher.callbacks import update_widgets, explain_metaprompt
+from prompt_teacher.evaluator import similarity_score
 
-with gr.Blocks(title="Prompt Teacher", theme=gr.themes.Soft()) as gradio_app:
+# -----------------------------
+# Environment setup
+# -----------------------------
+load_dotenv()
+HF_TOKEN = os.getenv("HUGGINGFACE_API_KEY", None)
+
+# Default open-access model (small & fast)
+DEFAULT_MODEL = os.getenv("DEFAULT_HF_MODEL", "mistralai/Mistral-7B-Instruct-v0.3")
+
+# Optional gated model (requires HF approval)
+GATED_MODEL = "meta-llama/Llama-3.1-8B"
+
+# -----------------------------
+# Initialize Hugging Face client
+# -----------------------------
+def init_hf_client(model_name, token=None):
+    try:
+        client = InferenceClient(model=model_name, token=token)
+        print(f"✅ Using Hugging Face model: {model_name}")
+        return client
+    except Exception as e:
+        print(f"⚠ Error initializing model '{model_name}': {e}")
+        return None
+
+# Try gated model if token exists, else fallback to open-access
+client = init_hf_client(GATED_MODEL, HF_TOKEN) if HF_TOKEN else None
+if client is None:
+    print("⚠ Falling back to open-access model.")
+    client = init_hf_client(DEFAULT_MODEL)
+
+# -----------------------------
+# Core Functions
+# -----------------------------
+def robustly_improve_prompt(model_name, api_key, prompt_text, metaprompt_name, feedback, chat_history):
+    mp_obj = next((mp for mp in metaprompts if mp.name.strip().lower() == (metaprompt_name or "").strip().lower()), None)
+    if not mp_obj:
+        err = f"⚠ Could not find metaprompt named '{metaprompt_name}'."
+        chat_history.append({"role": "assistant", "content": err})
+        return err, chat_history
+
+    # Fill template
+    template = mp_obj.template
+    filled = template.replace("{prompt}", prompt_text or "").replace("{feedback}", feedback or "")
+
+    # Refined instruction
+    instruction = (
+        f"{mp_obj.explanation}\n\n"
+        f"Original Prompt:\n{prompt_text}\n\n"
+        f"Your task: Rewrite the above prompt to make it clearer, more detailed, and actionable. "
+        f"Provide only the improved prompt text, no extra commentary."
+    )
+
+    try:
+        response = client.text_generation(prompt=instruction, max_new_tokens=200, temperature=0.7)
+        improved = response
+    except Exception as e:
+        improved = f"⚠ Error from HF API: {e}"
+
+    chat_history.append({"role": "user", "content": prompt_text})
+    chat_history.append({"role": "assistant", "content": improved})
+    return improved, chat_history
+
+
+def explain_improvement(model_name, api_key, prompt_text, metaprompt_name, improved_prompt, chat_history):
+    instruction = (
+        f"Explain concisely why the following improved prompt is better.\n\n"
+        f"Original Prompt:\n{prompt_text}\n\nImproved Prompt:\n{improved_prompt}\n\n"
+        f"Use clear bullet points and do not add extra commentary."
+    )
+
+    try:
+        response = client.text_generation(prompt=instruction, max_new_tokens=150, temperature=0.7)
+        explanation = response
+    except Exception as e:
+        explanation = f"⚠ Error: {e}"
+
+    chat_history.append({"role": "user", "content": "Explain how this improvement helps."})
+    chat_history.append({"role": "assistant", "content": explanation})
+    return chat_history
+
+
+def evaluate_example(expected, actual):
+    try:
+        score = similarity_score(expected, actual)
+    except Exception:
+        score = 0.0
+    return f"Similarity score: {score:.3f}"
+
+
+# -----------------------------
+# Gradio UI
+# -----------------------------
+with gr.Blocks(title="Prompt Teacher", theme=gr.themes.Soft()) as app:
     gr.Markdown("### 🤖 Prompt Teacher (Hugging Face Edition) 📝✨")
-    with gr.Accordion("ℹ️ Info: Modified to use free Hugging Face model", open=True):
-        gr.Markdown(
-            "This version uses the **Mistral-7B-Instruct** model from Hugging Face. "
-            "No OpenAI or Anthropic API keys are needed."
-        )
 
     with gr.Row():
         with gr.Column(scale=2):
-            prompt_teacher = gr.Chatbot(
-                height=580,
+            chat = gr.Chatbot(
                 label="Prompt Teacher",
+                height=520,
+                value=[{"role": "user", "content": inital_usr_text},
+                       {"role": "assistant", "content": initial_bot_text}],
+                elem_id="chat",
                 show_copy_button=True,
-                value=[[inital_usr_text, initial_bot_text]],
-                avatar_images=("thinking.svg", "robot.svg"),
+                type="messages"
             )
-            prompt = gr.Textbox(
-                label="Prompt",
-                interactive=True,
-                placeholder="Type your prompt here...",
-                value="How to write a good prompt?",
-                show_copy_button=True,
-            )
+
+            prompt = gr.Textbox(label="Prompt", placeholder="Type your prompt here...", value="How to write a good prompt?")
             with gr.Row():
-                explain_btn = gr.Button(
-                    "Explain improvement 💡",
-                    variant="primary",
-                    visible=False,
-                )
-                replace_btn = gr.Button(
-                    "Accept improvement 👍",
-                    variant="primary",
-                    visible=False,
-                )
-            with gr.Row():
-                improve_btn = gr.Button("✨Improve prompt", variant="primary")
+                explain_btn = gr.Button("Explain improvement 💡", visible=False)
+                replace_btn = gr.Button("Accept improvement 👍", visible=False)
+            improve_btn = gr.Button("✨ Improve prompt", variant="primary")
 
         with gr.Column(scale=1):
-            model_name = gr.Dropdown(
-                label="Model (Hugging Face only)",
-                info="Now uses Mistral-7B-Instruct from Hugging Face",
-                choices=["mistralai/Mistral-7B-Instruct"],
-                value="mistralai/Mistral-7B-Instruct",
-            )
-            api_key = gr.Textbox(
-                placeholder="No API key needed for Hugging Face token",
-                label="Hugging Face Token (.env)",
-                info="Already loaded from .env file",
-                lines=1,
-                type="password",
-                value="Loaded ✔️",
-                interactive=False
-            )
-            metaprompt = gr.Radio(
-                label="Improvements",
-                info="Select how the prompt should be improved",
-                value="Comprehensive prompt refinement",
-                choices=[mp.name.replace("_", " ").capitalize() for mp in metaprompts],
-            )
-            feedback = gr.Textbox(
-                label="Feedback",
-                info="Write your feedback to guide improvement",
-                visible=False,
-            )
+            model_name = gr.Textbox(label="Model (Hugging Face)", value=DEFAULT_MODEL)
+            api_key = gr.Textbox(label="Hugging Face Token (optional)", value="Loaded" if HF_TOKEN else "", interactive=False)
+            metaprompt = gr.Radio(label="Improvements", choices=[mp.name for mp in metaprompts], value=metaprompts[0].name if metaprompts else None)
+            feedback = gr.Textbox(label="Feedback (optional)", visible=False)
 
     improved_prompt = gr.Textbox(label="Improved Prompt", visible=False)
-    examples = gr.Examples(
-        examples=[[mp.name, mp.example_prompt] for mp in metaprompts],
-        examples_per_page=100,
-        inputs=[metaprompt, prompt],
-    )
+    example_expected = gr.Textbox(label="Expected answer (for evaluation)", placeholder="Provide expected answer to compute similarity", visible=True)
+    example_actual = gr.Textbox(label="Actual answer (model output)", placeholder="Paste model output to evaluate", visible=True)
+    eval_btn = gr.Button("Evaluate Example")
 
-    # Flow connections
-    metaprompt.change(
-        fn=update_widgets,
-        inputs=[metaprompt, feedback],
-        outputs=[improve_btn, feedback],
-    ).success(
-        lambda: [gr.Button(visible=False), gr.Button(visible=False)],
-        None,
-        [replace_btn, explain_btn],
-    ).success(
-        fn=explain_metaprompt,
-        inputs=[prompt_teacher, metaprompt],
-        outputs=[prompt_teacher],
+    # Interactions
+    metaprompt.change(fn=update_widgets, inputs=[metaprompt, feedback], outputs=[improve_btn, feedback]).success(
+        fn=explain_metaprompt, inputs=[chat, metaprompt], outputs=[chat]
     )
 
     improve_btn.click(
         fn=robustly_improve_prompt,
-        inputs=[model_name, api_key, prompt, metaprompt, feedback, prompt_teacher],
-        outputs=[improved_prompt, prompt_teacher],
-    ).success(
-        lambda: [gr.Button(visible=True), gr.Button(visible=True)],
-        None,
-        [replace_btn, explain_btn],
+        inputs=[model_name, api_key, prompt, metaprompt, feedback, chat],
+        outputs=[improved_prompt, chat]
+    ).success(lambda: [gr.update(visible=True), gr.update(visible=True)], None, [replace_btn, explain_btn])
+
+    explain_btn.click(
+        fn=explain_improvement,
+        inputs=[model_name, api_key, prompt, metaprompt, improved_prompt, chat],
+        outputs=[chat]
     )
 
-    explain_btn.click(lambda: gr.Button(visible=False), None, explain_btn).success(
-        explain_improvement,
-        [model_name, api_key, prompt, metaprompt, improved_prompt, prompt_teacher],
-        prompt_teacher,
-    )
+    replace_btn.click(fn=lambda x: x, inputs=improved_prompt, outputs=prompt).success(lambda: [gr.update(visible=False), gr.update(visible=False)], None, [replace_btn, explain_btn])
 
-    replace_btn.click(lambda x: x, improved_prompt, prompt).success(
-        lambda: [gr.Button(visible=False), gr.Button(visible=False)],
-        None,
-        [replace_btn, explain_btn],
-    )
+    eval_btn.click(fn=evaluate_example, inputs=[example_expected, example_actual], outputs=[chat])
 
-# ------------------------------------------------------------------------
-# 🔹 Launch Gradio App
-# ------------------------------------------------------------------------
+
+# -----------------------------
+# Launch
+# -----------------------------
+robot_icon = os.path.join(os.path.dirname(__file__), "robot.svg")
 if __name__ == "__main__":
-    gradio_app.queue(default_concurrency_limit=3).launch(favicon_path="robot.svg")
+    app.queue().launch(favicon_path=robot_icon)

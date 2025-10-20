@@ -1,6 +1,7 @@
 import yaml
 from pydantic import BaseModel, ValidationError
-
+from pathlib import Path
+import pkgutil
 
 class Metaprompt(BaseModel):
     explanation: str
@@ -10,34 +11,39 @@ class Metaprompt(BaseModel):
     template: str
 
     def __str__(self):
-        return f"✨**{self.name}**\n\n📝 *{self.explanation}*\n\n📚 **Example Prompt:** {self.example_prompt}\n\n📖 **Example Prompt Explanation:** {self.example_prompt_explanation}"
-
+        return f"{self.name}: {self.explanation}"
 
 class MetapromptLibrary(BaseModel):
     Metaprompts: list[Metaprompt]
 
-
-def read_and_validate(file_path: str = "metaprompts.yml"):
+def read_and_validate(file_path: str | None = None):
+    """
+    Load metaprompts.yml from file_path or from package data.
+    Returns MetapromptLibrary(Metaprompts=[]) on any error.
+    """
     try:
-        with open(file_path, "r") as file:
-            data = yaml.safe_load(file)
-            validated_data = MetapromptLibrary(**data)
-            return validated_data
-    except FileNotFoundError:
-        return "Error: The file was not found."
-    except yaml.YAMLError as e:
-        return f"Error parsing YAML: {e}"
-    except ValidationError as e:
-        return f"Validation error: {e}"
+        if file_path:
+            p = Path(file_path)
+            if p.exists():
+                with p.open("r", encoding="utf-8") as f:
+                    data = yaml.safe_load(f)
+            else:
+                raise FileNotFoundError
+        else:
+            # try to load package data (metaprompts.yml next to this file)
+            data_bytes = pkgutil.get_data(__name__.split(".")[0], "metaprompts.yml")
+            if not data_bytes:
+                raise FileNotFoundError
+            data = yaml.safe_load(data_bytes.decode("utf-8"))
 
+        validated = MetapromptLibrary(**data)
+        print(f"✅ Loaded {len(validated.Metaprompts)} metaprompts.")
+        return validated
+    except Exception as e:
+        print(f"⚠ Could not load metaprompts: {e}. Using empty list.")
+        return MetapromptLibrary(Metaprompts=[])
 
-metaprompts = read_and_validate().Metaprompts
+# global variables
+metaprompts_library = read_and_validate()
+metaprompts = metaprompts_library.Metaprompts
 metaprompts_dict = {mp.name: mp for mp in metaprompts}
-
-if __name__ == "__main__":
-    file_path = "metaprompts.yml"  # Specify the path to your YAML file
-    result = read_and_validate(file_path)
-    if isinstance(result, MetapromptLibrary):
-        print("Data validated successfully:", result)
-    else:
-        print(result)
