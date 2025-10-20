@@ -1,0 +1,145 @@
+---
+Metaprompts:
+  - explanation: "Expands a prompt to include more detailed instructions and context."
+    example_prompt: "Tell me about dogs."
+    example_prompt_explanation: "This prompt is very vague and lacks context, making it ideal for expansion to guide the LLM more effectively."
+    name: "Expand with details"
+    template: |
+      Expand this prompt to include more detailed instructions and context:
+
+      {prompt}
+
+      Add necessary details and context to guide the LLM towards a more comprehensive and targeted response.
+  - explanation: "Improves a prompt based on specific feedback provided."
+    example_prompt: "Describe the process of photosynthesis."
+    example_prompt_explanation: "Feedback might suggest making the prompt more accessible for younger audiences or more detailed for academic use."
+    name: "Apply feedback"
+    template: |
+      Improve the following prompt:
+
+      {prompt}
+
+      given this feedback:
+
+      {feedback}
+  - explanation: "Condenses a prompt to make it more succinct while retaining its essential request."
+    example_prompt: "Write a funny joke that makes people laugh about something very funny. It should be hilarious."
+    example_prompt_explanation: "This prompt can be condensed by removing redundant information"
+    name: "Simply condense prompt"
+    template: |
+      Condense this prompt:
+
+      {prompt}
+  - explanation: "Improves a prompt to enhance clarity and effectiveness."
+    example_prompt: "Tell me how to cook rice."
+    example_prompt_explanation: "This prompt can be improved by specifying the type of cuisine or cooking method."
+    name: "Simply improve prompt"
+    template: |
+      Improve this prompt:
+
+      {prompt}
+  - explanation: "Structures a prompt to guide the LLM through a series of sequential tasks."
+    example_prompt: "Plan a birthday party."
+    example_prompt_explanation: "This prompt can be structured to outline steps such as choosing a theme, preparing a guest list, and organizing activities."
+    name: "Create sequential task list"
+    template: |
+      Structure this prompt to guide the LLM through a series of sequential tasks:
+
+      {prompt}
+
+      Organize the prompt so that it clearly outlines each step the LLM should take, ensuring a logical flow and comprehensive coverage of the tasks.
+  - explanation: "Transforms a prompt to inspire creativity and elicit imaginative responses."
+    example_prompt: "Write a story about a lost kitten."
+    example_prompt_explanation: "The prompt can be revised to encourage more descriptive or emotional storytelling."
+    name: "Elicit creative response"
+    template: |
+      Transform this prompt to elicit a creative response:
+
+      {prompt}
+  - explanation: "Tailors a prompt to include a specific hypothetical scenario for detailed exploration."
+    example_prompt: "The danger of Artificial General Intelligence"
+    example_prompt_explanation: "This prompt can be tailored to explore specific hypothetical scenarios to provide depth and context."
+    name: "Include hypothetical scenario"
+    template: |
+      Tailor this prompt to include a specific hypothetical scenario:
+
+      {prompt}
+
+      Add a detailed scenario that helps explore the topic in depth, providing context and specifics to guide the response.
+  - explanation: "Reframes a prompt to focus on ethical considerations or moral dilemmas."
+    example_prompt: "Genetic engineering in humans."
+    example_prompt_explanation: "This prompt can be reframed to focus on the ethical considerations or moral dilemmas involved."
+    name: "Focus on ethics"
+    template: |
+      Reframe this prompt to focus on ethical considerations or moral dilemmas:
+
+      {prompt}
+
+      Modify the prompt to emphasize ethical debates, moral questions, and the implications of the topic. Revise the prompt to inspire creativity, using techniques suchas open-ended questions or imaginative scenarios.
+
+      Improved prompt:
+  - explanation: "Adds a role to the prompt to improve the response"
+    example_prompt: "Write a short song"
+    example_prompt_explanation: "By adding an expert role, we can potentialy improve the quality of the created song"
+    name: "Add role prompting"
+    template: |
+      Add expert role prompting to the following prompt
+
+      {prompt}
+
+      Improved prompt:
+  - explanation: "Adds clear delimiters to a prompt to separate and organize different sections or instructions, enhancing readability and structure."
+    example_prompt: "Summarize this text {text} with bulletpoints. Be concise"
+    example_prompt_explanation: "This prompt can benefit from clear delimiters to separate instructions or sections, making it easier for the LLM to follow and respond systematically."
+    name: "Add delimiters for clarity"
+    template: |
+      Add delimiters (e.g. section titles, bullet points, or triple quotation marks) to this prompt to clearly separate and organize different sections or instructions and thereby enhance its structure and readability:
+
+      {prompt}
+  - explanation: "Incorporates chain of thought reasoning to guide the LLM through a logical sequence of thoughts for complex problem-solving."
+    example_prompt: "How can we reduce traffic congestion in urban areas?"
+    example_prompt_explanation: "This prompt can benefit from chain of thought reasoning to break down the problem into manageable parts and explore various solutions systematically."
+    name: "Incorporate chain of thought reasoning"
+    template: |
+      Incorporate chain of thought reasoning into the following prompt:
+
+      {prompt}
+
+      Break down the problem into a logical sequence of thoughts, exploring each aspect step by step to guide the LLM towards a comprehensive solution.
+  - explanation: This metaprompt integrates various techniques to refine, expand, and adapt prompts for LLMs, ensuring clarity, specificity, and engagement tailored to the intended purpose.
+    example_prompt: "Write a brief history of Artificial Intelligence"
+    example_prompt_explanation: "This prompt can be improved by specifying aspects such as the depth of detail, areas of focus, and desired structure."
+    name: Comprehensive prompt refinement
+    template: |
+      Your goal is to enhance the prompt given below by applying best practices in prompt engineering, including expansion for detail, adaptation for specific audiences, incorporation of feedback, and structuring for clarity and engagement.
+
+      ### Original Prompt:
+      {prompt}
+
+      ### Improvement Strategies:
+      1. **Specify the Expertise**: Clearly state if the prompt should be answered by an expert in a specific field.
+      2. **Add Detailed Instructions**: Include comprehensive instructions at the beginning of the prompt. Use markdown like `###` or triple backticks ``` to separate instruction and context.
+      3. **Expand for Detail**: Add necessary details and context to guide the LLM towards a more comprehensive and targeted response.
+      4. **Structure Sequentially**: If applicable, organize the prompt to guide the LLM through a series of sequential tasks or thought processes.
+      5. **Elicit Creativity**: If the prompt is creative, encourage imaginative and engaging responses.
+      6. **Include Hypothetical Scenarios**: For topics that benefit from depth, add specific scenarios that the LLM can explore.
+      7. **Focus on Ethics**: If relevant, reframe the prompt to emphasize ethical considerations or moral dilemmas.
+      8. **Add Role Prompting**: Introduce a role (e.g., an expert or a specific character) to potentially enhance the quality and relevance of the response.
+      9. **Add Delimiters for Clarity**: Use clear delimiters to organize different sections or instructions, enhancing readability and structure.
+      10. **Incorporate Chain of Thought Reasoning**: For complex problems, break down the issue into a logical sequence of thoughts to guide the LLM systematically.
+
+      ### Example of an Improved Prompt:
+      ```
+      As an expert in environmental science, provide a detailed analysis of the impact of climate change on global agriculture.
+
+      ### Instructions:
+      - Begin with an overview of the current scientific consensus on climate change.
+      - Discuss the specific ways in which changing climates are affecting agricultural practices worldwide.
+      - Include case studies or examples from different continents.
+      - Analyze potential future trends and suggest sustainable agricultural practices.
+      - Conclude with recommendations for policymakers.
+      - Target this explanation to an audience with a basic understanding of environmental science, aiming for about 2000 words.
+      ```
+
+      ### Improved Prompt:
+      ```
